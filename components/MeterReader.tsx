@@ -20,6 +20,7 @@ import InvoiceTemplate from './InvoiceTemplate';
 
 interface OCRResult {
   readingValue: number;
+  consumedUnits?: number;
   serialNumber: string;
   confidence: number;
   ocrText?: string;
@@ -93,7 +94,17 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
   const billingStats = useMemo(() => {
     if (!analysisResult) return null;
     const prev = finalMeter?.lastReading || 0;
-    const units = manualUnits !== null ? manualUnits : Math.max(0, analysisResult.readingValue - prev);
+
+    // Prioritize manualUnits, then AI-extracted consumedUnits, then calculated difference
+    let units = 0;
+    if (manualUnits !== null) {
+      units = manualUnits;
+    } else if (analysisResult.consumedUnits !== undefined && analysisResult.consumedUnits !== null) {
+      units = analysisResult.consumedUnits;
+    } else {
+      units = Math.max(0, analysisResult.readingValue - prev);
+    }
+
     return { units, amount: units * ratePerUnit };
   }, [analysisResult, finalMeter, ratePerUnit, manualUnits]);
 
@@ -389,6 +400,14 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
             <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight mb-6">Confirm Data</h3>
 
             <div className="space-y-4">
+              {/* Unit Association */}
+              {finalShop && (
+                <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+                  <Store className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-sm font-black text-slate-800 dark:text-white truncate">{finalShop.name}</p>
+                </div>
+              )}
+
               <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 group focus-within:border-emerald-500 transition-colors">
                 <div className="flex justify-between items-center mb-1">
                   <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Meter ID (Serial)</p>
@@ -402,10 +421,18 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
                 />
               </div>
 
+              {/* Reading Comparison Row */}
               <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50/50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Previous</p>
+                  <div className="flex items-baseline gap-1">
+                    <p className="text-lg font-black text-slate-400 dark:text-slate-500 tracking-tighter">{finalMeter?.lastReading || 0}</p>
+                    <span className="text-[8px] text-slate-300 uppercase font-black">kWh</span>
+                  </div>
+                </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 group focus-within:border-emerald-500 transition-colors">
                   <div className="flex justify-between items-center mb-1">
-                    <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">New Reading</p>
+                    <p className="text-[9px] font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Current</p>
                     <Pencil className="w-3 h-3 text-slate-300 dark:text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                   </div>
                   <div className="flex items-baseline gap-1">
@@ -419,48 +446,49 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
                     <span className="text-[10px] text-slate-400 dark:text-slate-600 uppercase font-bold">kWh</span>
                   </div>
                 </div>
-                <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-800/30 group focus-within:border-emerald-500 transition-colors">
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Units Used</p>
-                    <Pencil className="w-3 h-3 text-emerald-300 dark:text-emerald-600 group-focus-within:text-emerald-500 transition-colors" />
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <input
-                      type="number"
-                      step="1"
-                      className="w-full bg-transparent font-black text-emerald-900 dark:text-emerald-300 tracking-tighter outline-none text-lg"
-                      value={manualUnits !== null ? manualUnits : billingStats?.units}
-                      onChange={e => setManualUnits(parseFloat(e.target.value) || 0)}
-                    />
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-500 uppercase font-bold">Units</span>
-                  </div>
+              </div>
+
+              {/* Consumed Units Display */}
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 p-5 rounded-2xl border-2 border-emerald-100 dark:border-emerald-800/30 group focus-within:border-emerald-500 transition-colors">
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Consumed Units</p>
+                  <Pencil className="w-3 h-3 text-emerald-300 dark:text-emerald-600 group-focus-within:text-emerald-500 transition-colors" />
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <input
+                    type="number"
+                    step="1"
+                    className="w-full bg-transparent font-black text-emerald-900 dark:text-emerald-300 tracking-tighter outline-none text-2xl"
+                    value={manualUnits !== null ? manualUnits : billingStats?.units}
+                    onChange={e => setManualUnits(parseFloat(e.target.value) || 0)}
+                  />
+                  <span className="text-xs text-emerald-600 dark:text-emerald-500 uppercase font-black">Units</span>
                 </div>
               </div>
             </div>
 
             {/* Price Preview */}
-            <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-lg">
-              <p className="text-[9px] font-black text-emerald-400 dark:text-emerald-400 uppercase tracking-widest">Bill Amount</p>
-              <p className="text-lg font-black text-white">Rs. {billingStats?.amount.toLocaleString()}</p>
+            <div className="mt-6 bg-slate-900 dark:bg-emerald-600 rounded-3xl p-6 flex items-center justify-between shadow-xl shadow-slate-200 dark:shadow-emerald-950/40">
+              <div>
+                <p className="text-[10px] font-black text-emerald-400 dark:text-emerald-100 uppercase tracking-widest mb-1">Total Bill Amount</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-bold text-emerald-300 dark:text-emerald-200">Rs.</span>
+                  <p className="text-3xl font-black text-white tracking-tighter">{billingStats?.amount.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] font-bold text-slate-400 dark:text-emerald-200/60 uppercase">Rate</p>
+                <p className="text-xs font-black text-white">@{ratePerUnit}</p>
+              </div>
             </div>
 
             {finalShop ? (
-              <div className="mt-8 space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-emerald-600 dark:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-emerald-950/40 border border-emerald-500 dark:border-emerald-600">
-                  <div className="bg-emerald-500 dark:bg-emerald-600 p-2 rounded-xl">
-                    <Store className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black text-emerald-100 dark:text-emerald-200 uppercase tracking-widest leading-none mb-1">Associated Unit</p>
-                    <p className="text-sm font-black truncate">{finalShop.name}</p>
-                  </div>
-                </div>
-
+              <div className="mt-8">
                 <button
                   onClick={handleConfirm}
-                  className="w-full py-5 bg-slate-900 dark:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl shadow-slate-200 dark:shadow-emerald-950/40 hover:bg-black dark:hover:bg-emerald-500 hover:scale-[1.02] active:scale-95 transition-all"
+                  className="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
                 >
-                  <Check className="w-5 h-5 text-emerald-400 dark:text-white" />
+                  <Check className="w-5 h-5 text-emerald-400 dark:text-emerald-600" />
                   <span>Approve & Generate Bill</span>
                 </button>
               </div>

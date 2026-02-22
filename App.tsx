@@ -118,6 +118,7 @@ const App: React.FC = () => {
 
   const handleMeterCapture = async (data: {
     readingValue: number;
+    consumedUnits?: number;
     serialNumber: string;
     photoUrl: string;
     confidence: number;
@@ -145,11 +146,16 @@ const App: React.FC = () => {
       confidence: data.confidence,
     };
 
-    // Calculate consumption (allow manual override)
+    // Calculate consumption (allow manual override or AI suggestion)
     const prevReading = meter.lastReading || 0;
-    const units = data.manualUnits !== undefined
-      ? data.manualUnits
-      : Math.max(0, data.readingValue - prevReading);
+    let units = 0;
+    if (data.manualUnits !== undefined) {
+      units = data.manualUnits;
+    } else if (data.consumedUnits !== undefined && data.consumedUnits !== null) {
+      units = data.consumedUnits;
+    } else {
+      units = Math.max(0, data.readingValue - prevReading);
+    }
 
     const amount = units * ratePerUnit;
 
@@ -163,6 +169,7 @@ const App: React.FC = () => {
       totalAmount: amount,
       issuedDate: new Date().toISOString(),
       status: 'approved',
+      paidStatus: false,
     };
 
     // Update meter with latest reading
@@ -413,6 +420,7 @@ const App: React.FC = () => {
             readings={readings}
             shops={shops}
             meters={meters}
+            onRefresh={refreshState}
           />
         )
       }

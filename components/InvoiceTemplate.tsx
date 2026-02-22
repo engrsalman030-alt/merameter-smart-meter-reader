@@ -95,18 +95,36 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, shop, meter,
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center gap-1">
-                            <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Units Used</p>
-                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{invoice.units.toLocaleString()}</p>
-                        </div>
-                        <div className="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center gap-1">
-                            <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Rate / Unit</p>
-                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">Rs. {invoice.ratePerUnit.toFixed(0)}</p>
-                        </div>
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border-4 border-slate-900 dark:border-slate-600 flex flex-col items-center justify-center gap-1 shadow-sm">
-                            <p className="text-[9px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">Total Payable</p>
-                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">Rs. {invoice.totalAmount.toLocaleString()}</p>
-                        </div>
+                        {[
+                            { label: 'Consumed Units', value: invoice.units.toLocaleString(), prefix: '', sub: 'kWh Total' },
+                            { label: 'Rate / Unit', value: invoice.ratePerUnit.toFixed(0), prefix: 'Rs. ' },
+                            { label: 'Total Payable', value: invoice.totalAmount.toLocaleString(), prefix: 'Rs. ', highlight: true }
+                        ].map((stat, i) => {
+                            const fullValue = `${stat.prefix}${stat.value}`;
+                            const fontSize = fullValue.length > 12 ? 'text-xl' : fullValue.length > 10 ? 'text-2xl' : 'text-3xl';
+
+                            return (
+                                <div
+                                    key={i}
+                                    className={`${stat.highlight
+                                        ? 'bg-white dark:bg-slate-800 border-4 border-slate-900 dark:border-slate-600 shadow-sm'
+                                        : 'border border-slate-100 dark:border-slate-800'} 
+                                        p-4 md:p-6 rounded-2xl flex flex-col items-center justify-center gap-1 min-w-0 w-full overflow-hidden`}
+                                >
+                                    <p className={`text-[9px] font-black uppercase tracking-widest ${stat.highlight ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}`}>
+                                        {stat.label}
+                                    </p>
+                                    <p className={`${fontSize} font-black text-slate-900 dark:text-white tracking-tighter truncate w-full text-center px-1`}>
+                                        {fullValue}
+                                    </p>
+                                    {stat.highlight && (
+                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter mt-1">
+                                            {invoice.units} units × Rs. {invoice.ratePerUnit}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 

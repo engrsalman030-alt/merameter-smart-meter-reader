@@ -8,11 +8,13 @@ interface Props {
   readings: MeterReading[];
   shops: Shop[];
   meters: Meter[];
+  onRefresh: () => Promise<void>;
 }
 
 import InvoiceTemplate from './InvoiceTemplate';
+import { dbService } from '../services/dbService';
 
-const InvoiceView: React.FC<Props> = ({ invoices, readings, shops, meters }) => {
+const InvoiceView: React.FC<Props> = ({ invoices, readings, shops, meters, onRefresh }) => {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -98,6 +100,20 @@ const InvoiceView: React.FC<Props> = ({ invoices, readings, shops, meters }) => 
     }
   };
 
+  const togglePaidStatus = async () => {
+    if (!selectedInvoice) return;
+    try {
+      const updatedInvoice = {
+        ...selectedInvoice,
+        paidStatus: !selectedInvoice.paidStatus
+      };
+      await dbService.put('invoices', updatedInvoice);
+      await onRefresh();
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
+
   if (!selectedInvoice) {
     return (
       <div className="p-4 md:p-8 min-h-[calc(100vh-140px)] flex items-center justify-center">
@@ -127,6 +143,19 @@ const InvoiceView: React.FC<Props> = ({ invoices, readings, shops, meters }) => 
 
           {/* Actions - No Print */}
           <div className="flex flex-col sm:flex-row gap-4 no-print">
+            <button
+              onClick={togglePaidStatus}
+              className={`flex-1 p-6 rounded-3xl flex items-center justify-center gap-4 text-xs font-black transition-all active:scale-[0.98] border-2 ${selectedInvoice.paidStatus
+                ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-700 dark:text-emerald-400'
+                : 'bg-white dark:bg-slate-900 border-slate-900 text-slate-900 dark:border-white dark:text-white'}`}
+            >
+              <div className={`p-2.5 rounded-xl border ${selectedInvoice.paidStatus ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+                {selectedInvoice.paidStatus ? <CheckCircle2 className="w-5 h-5" /> : <Banknote className="w-5 h-5" />}
+              </div>
+              <span className="tracking-[0.2em] uppercase">
+                {selectedInvoice.paidStatus ? 'PAID & COLLECTED' : 'MARK AS PAID'}
+              </span>
+            </button>
             <button
               onClick={handlePrint}
               disabled={isPrinting || isSharing}
@@ -192,9 +221,16 @@ const InvoiceView: React.FC<Props> = ({ invoices, readings, shops, meters }) => 
                       <p className={`font-black text-sm ${isSelected ? 'text-emerald-400 dark:text-white' : 'text-slate-800 dark:text-slate-100'}`}>
                         Rs. {inv.totalAmount.toLocaleString()}
                       </p>
-                      <p className={`text-[10px] font-bold mt-1 ${isSelected ? 'text-slate-500 dark:text-emerald-200/40' : 'text-slate-400 dark:text-slate-500'}`}>
-                        {inv.units} units
-                      </p>
+                      <div className="flex items-center justify-end gap-1 mt-1">
+                        {inv.paidStatus ? (
+                          <CheckCircle2 className={`w-3 h-3 ${isSelected ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                        ) : (
+                          <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-slate-400' : 'bg-slate-300'}`} />
+                        )}
+                        <p className={`text-[10px] font-bold ${isSelected ? 'text-slate-400 dark:text-emerald-100/60' : 'text-slate-400 dark:text-slate-500'}`}>
+                          {inv.paidStatus ? 'PAID' : 'PENDING'}
+                        </p>
+                      </div>
                     </div>
                   </button>
                 );

@@ -26,9 +26,17 @@ const AdminDashboard: React.FC<Props> = ({ shops, readings, invoices }) => {
     () => invoices.reduce((sum, inv) => sum + inv.units, 0),
     [invoices]
   );
-  const totalRevenue = useMemo(
+  const totalBilled = useMemo(
     () => invoices.reduce((sum, inv) => sum + inv.totalAmount, 0),
     [invoices]
+  );
+  const paidCollection = useMemo(
+    () => invoices.filter(inv => inv.paidStatus).reduce((sum, inv) => sum + inv.totalAmount, 0),
+    [invoices]
+  );
+  const outstandingBalance = useMemo(
+    () => totalBilled - paidCollection,
+    [totalBilled, paidCollection]
   );
 
   return (
@@ -49,38 +57,49 @@ const AdminDashboard: React.FC<Props> = ({ shops, readings, invoices }) => {
       {/* PRIMARY STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-        {/* Total Revenue Card - Hero Style */}
+        {/* Total Collection Card - Hero Style */}
         <div className="relative group lg:col-span-2 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-[2rem] shadow-2xl shadow-emerald-200/50 dark:shadow-emerald-950/40" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
-          <div className="relative p-8 space-y-4">
-            <div className="bg-white/10 w-fit p-3 rounded-xl backdrop-blur-md">
-              <Banknote className="w-6 h-6 text-white" />
+          <div className="relative p-8 flex flex-col justify-between h-full min-h-[220px] space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="bg-white/10 w-fit p-3 rounded-xl backdrop-blur-md">
+                <Banknote className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-emerald-200 uppercase tracking-[0.3em]">Total Billed</p>
+                <p className="text-xl font-black text-white">Rs. {Math.round(totalBilled).toLocaleString()}</p>
+              </div>
             </div>
             <div>
-              <p className="text-[10px] font-black text-emerald-200 uppercase tracking-[0.3em]">Total Collection</p>
-              <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-[10px] font-black text-emerald-100 uppercase tracking-[0.3em] mb-1">Amount Received</p>
+              <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold text-emerald-300">PKR</span>
                 <p className="text-5xl font-black text-white tracking-tighter">
-                  {totalRevenue.toLocaleString()}
+                  {Math.round(paidCollection).toLocaleString()}
                 </p>
               </div>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex justify-between items-center">
               <span className="text-[10px] font-black text-emerald-100/60 uppercase tracking-widest">Across {invoices.length} Invoices</span>
+              <div className="bg-red-500/20 px-3 py-1 rounded-full border border-red-500/30">
+                <span className="text-[9px] font-black text-red-200 uppercase tracking-tighter">Amount Remaining: Rs. {Math.round(outstandingBalance).toLocaleString()}</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Units Consumed Card */}
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] hover:shadow-xl dark:hover:shadow-black/20 transition-all duration-300 group">
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] hover:shadow-xl dark:hover:shadow-black/20 transition-all duration-300 group overflow-hidden">
           <div className="bg-amber-50 dark:bg-amber-950/20 w-fit p-3 rounded-xl group-hover:bg-amber-100 dark:group-hover:bg-amber-900/30 transition-colors">
             <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="mt-4">
             <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Units Used</p>
-            <div className="flex items-baseline gap-1 mt-1">
-              <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">{totalUnits.toLocaleString()}</p>
+            <div className="flex items-baseline gap-1 mt-1 flex-wrap">
+              <p className={`${totalUnits.toLocaleString().length > 10 ? 'text-2xl' : 'text-3xl'} font-black text-slate-800 dark:text-white tracking-tighter transition-all duration-300`}>
+                {totalUnits.toLocaleString()}
+              </p>
               <p className="text-xs font-black text-slate-400 dark:text-slate-600 uppercase">kWh</p>
             </div>
           </div>
@@ -95,7 +114,7 @@ const AdminDashboard: React.FC<Props> = ({ shops, readings, invoices }) => {
             <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="mt-4">
-            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">All Shops</p>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Registered Units</p>
             <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter mt-1">{shops.length}</p>
           </div>
           <div className="absolute top-8 right-8 text-slate-300 dark:text-slate-700 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
