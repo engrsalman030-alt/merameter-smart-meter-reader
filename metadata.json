@@ -1,0 +1,7 @@
+{
+  "name": "MeraMeter - Smart Meter Reader Pakistan",
+  "description": "Offline-first meter reading PWA with AI-powered OCR, designed for the Pakistani retail market.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
