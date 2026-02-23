@@ -34,21 +34,6 @@ class DBService {
     return db.delete(storeName, id);
   }
 
-  async seedInitialData() {
-    const shops = await this.getAll<Shop>('shops');
-    if (shops.length === 0) {
-      const mockShops: Shop[] = [
-        { id: 's1', name: 'Zia General Store', ownerName: 'Ziauddin', cnic: '42101-1234567-1', phone: '0300-1234567', address: 'Block 4, Gulshan-e-Iqbal, Karachi', meterId: 'm1' },
-        { id: 's2', name: 'Al-Madina Bakery', ownerName: 'Muhammad Ali', cnic: '42201-7654321-2', phone: '0333-7654321', address: 'Main Blvd, Lahore Cantt', meterId: 'm2' }
-      ];
-      const mockMeters: Meter[] = [
-        { id: 'm1', serialNumber: 'K-EL-100293', shopId: 's1', installDate: '2023-01-15', lastReading: 1200 },
-        { id: 'm2', serialNumber: 'L-ES-992011', shopId: 's2', installDate: '2023-02-10', lastReading: 1450 }
-      ];
-      for (const s of mockShops) await this.put('shops', s);
-      for (const m of mockMeters) await this.put('meters', m);
-    }
-  }
 
   async restoreData(data: { shops: string; meters: string; readings: string; invoices: string }) {
     const db = await this.dbPromise;

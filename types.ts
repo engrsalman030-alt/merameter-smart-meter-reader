@@ -19,6 +19,9 @@ export interface Shop {
   phone: string;
   address: string;
   meterId: string;
+  shopNumber: string;
+  customerImage?: string;
+  registrationDate: string;
 }
 
 export interface Meter {
@@ -27,6 +30,9 @@ export interface Meter {
   shopId: string;
   installDate: string;
   lastReading?: number;
+  meterImage?: string;
+  initialReadingBefore?: number;
+  initialReadingAfter?: number;
 }
 
 export interface MeterReading {

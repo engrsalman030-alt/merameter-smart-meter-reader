@@ -359,7 +359,7 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
         <div className="w-full max-w-sm flex flex-col gap-4">
           <button
             onClick={startCamera}
-            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-bold shadow-lg hover:scale-105 transition-transform active:scale-95"
+            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-emerald-600 text-white font-bold shadow-lg hover:bg-emerald-700 transition-colors active:scale-95"
           >
             <Camera className="w-5 h-5" />
             <span className="text-lg">Scan Meter</span>
@@ -367,7 +367,7 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold shadow-md hover:bg-slate-200 transition-colors active:scale-95"
+            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors active:scale-95"
           >
             <ImageIcon className="w-5 h-5" />
             <span className="text-lg">Pick Gallery</span>
@@ -391,7 +391,7 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
       )}
 
       {analysisResult && (
-        <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl shadow-slate-200/60 dark:shadow-black/40 border border-slate-100 dark:border-slate-800 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-hidden">
+        <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-800 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-hidden">
           {/* Decorative */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 dark:bg-emerald-950/20 rounded-bl-[5rem] -mr-10 -mt-10 opacity-40 pointer-events-none" />
 
@@ -486,7 +486,7 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
               <div className="mt-8">
                 <button
                   onClick={handleConfirm}
-                  className="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
+                  className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg hover:bg-black dark:hover:bg-slate-100 active:scale-[0.98] transition-all"
                 >
                   <Check className="w-5 h-5 text-emerald-400 dark:text-emerald-600" />
                   <span>Approve & Generate Bill</span>
