@@ -16,8 +16,8 @@ interface LayoutProps {
   onTabChange: (
     tab: "admin" | "reader" | "shops" | "invoices" | "settings"
   ) => void;
-  isOnline: boolean;
-  onLogout: () => void;
+  onOfflineToggle?: (enabled: boolean) => void;
+  isOfflineMode?: boolean;
 }
 
 const Layout: React.FC<LayoutProps> = ({
@@ -26,6 +26,8 @@ const Layout: React.FC<LayoutProps> = ({
   onTabChange,
   isOnline,
   onLogout,
+  onOfflineToggle,
+  isOfflineMode,
 }) => {
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(
     (localStorage.getItem("theme") as "light" | "dark") || "light"
@@ -127,8 +129,8 @@ const Layout: React.FC<LayoutProps> = ({
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${isActive
-                    ? "bg-emerald-600 text-white shadow"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  ? "bg-emerald-600 text-white shadow"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
               >
                 <Icon className="w-5 h-5" />
@@ -147,18 +149,38 @@ const Layout: React.FC<LayoutProps> = ({
           </button>
         </nav>
 
-        {/* Status */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-          <div
-            className={`flex items-center gap-2 text-xs font-medium ${isOnline ? "text-emerald-500" : "text-red-500"
+        {/* Status & Offline Toggle */}
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div
+              className={`flex items-center gap-2 text-xs font-medium ${isOnline ? "text-emerald-500" : "text-red-500"
+                }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-500" : "bg-red-500"
+                  }`}
+              />
+              {isOnline ? "Server Online" : "Server Offline"}
+            </div>
+          </div>
+
+          <button
+            onClick={() => onOfflineToggle?.(!isOfflineMode)}
+            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${isOfflineMode
+              ? "bg-amber-50 border-amber-200 text-amber-700"
+              : "bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800/50 dark:border-slate-800"
               }`}
           >
-            <div
-              className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-500" : "bg-red-500"
-                }`}
-            />
-            {isOnline ? "Online" : "Offline"}
-          </div>
+            <div className="flex items-center gap-2">
+              <Zap className={`w-4 h-4 ${isOfflineMode ? "fill-amber-500 text-amber-500" : ""}`} />
+              <span className="text-[10px] font-black uppercase tracking-wider">
+                {isOfflineMode ? "Offline Mode: ON" : "Offline Mode: OFF"}
+              </span>
+            </div>
+            <div className={`w-8 h-4 rounded-full relative transition-colors ${isOfflineMode ? "bg-amber-500" : "bg-slate-300 dark:bg-slate-700"}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${isOfflineMode ? "left-4.5" : "left-0.5"}`} />
+            </div>
+          </button>
         </div>
       </aside>
 

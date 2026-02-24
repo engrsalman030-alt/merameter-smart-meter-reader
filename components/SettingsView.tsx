@@ -8,14 +8,16 @@ import {
     Upload,
     Eye,
     EyeOff,
-    ShieldCheck,
     Users,
     Layout,
-    Database,
-    Save,
     AlertTriangle,
-    FileJson,
-    CheckCircle2
+    CheckCircle2,
+    Moon,
+    Sun,
+    Info,
+    ChevronDown,
+    ChevronUp,
+    X
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -50,6 +52,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     const [appName, setAppName] = useState(localStorage.getItem('appName') || 'MeraMeter');
     const [appLogo, setAppLogo] = useState(localStorage.getItem('appLogo') || '');
     const appLogoInputRef = useRef<HTMLInputElement>(null);
+
+    // About Section State
+    const [isAboutOpen, setIsAboutOpen] = useState(false);
 
     const handleBrandingUpdate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -199,25 +204,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     };
 
     return (
-        <div className="p-6 md:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 bg-slate-50 dark:bg-transparent min-h-screen font-sans">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Settings</h1>
-                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                        System Preferences & Configuration
-                    </p>
-                </div>
-                {/* Toast Message */}
+        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 p-4 md:p-8 flex justify-center items-start font-sans animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden relative">
+
+                {/* Toast Notification */}
                 <AnimatePresence>
                     {passwordMessage && (
                         <motion.div
-                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                            className={`px-5 py-3 rounded-xl flex items-center gap-3 shadow-lg border ${passwordMessage.type === 'success'
-                                ? 'bg-emerald-500 text-white border-emerald-600'
-                                : 'bg-red-500 text-white border-red-600'
+                            initial={{ opacity: 0, y: -50, x: '-50%' }}
+                            animate={{ opacity: 1, y: 20, x: '-50%' }}
+                            exit={{ opacity: 0, y: -50, x: '-50%' }}
+                            className={`fixed top-0 left-1/2 z-50 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border backdrop-blur-md ${passwordMessage.type === 'success'
+                                ? 'bg-emerald-500/90 text-white border-emerald-400/50'
+                                : 'bg-red-500/90 text-white border-red-400/50'
                                 }`}
                         >
                             {passwordMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
@@ -225,304 +224,304 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                {/* Left Column */}
-                <div className="space-y-8">
-                    {/* Profile Card */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/20">
-                        {/* Header */}
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                <Users className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">My Profile</h2>
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Personal details and avatar</p>
-                            </div>
-                        </div>
+                {/* Header */}
+                <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 sticky top-0 z-10">
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Settings</h1>
+                    <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
 
-                        <form onSubmit={handleProfileUpdate} className="flex flex-col md:flex-row gap-8">
-                            {/* Avatar Upload */}
-                            <div className="shrink-0">
-                                <div
-                                    className="group relative w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-inner bg-slate-100 dark:bg-slate-800 cursor-pointer"
-                                    onClick={() => profileImageInputRef.current?.click()}
-                                >
-                                    {userImage ? (
-                                        <img src={userImage} alt="Profile" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <Users className="w-10 h-10 text-slate-300" />
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm">
-                                        <Upload className="w-8 h-8 text-white drop-shadow-lg" />
+                <div className="p-6 md:p-8 space-y-10">
+
+                    {/* Profile Section */}
+                    <section>
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
+                            <Users className="w-5 h-5 text-blue-500" />
+                            Profile Settings
+                        </h2>
+                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20">
+                            <form onSubmit={handleProfileUpdate} className="flex flex-col md:flex-row gap-6 items-center">
+                                <div className="relative group cursor-pointer" onClick={() => profileImageInputRef.current?.click()}>
+                                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm">
+                                        {userImage ? (
+                                            <img src={userImage} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                <Users className="w-8 h-8 text-slate-400" />
+                                            </div>
+                                        )}
                                     </div>
+                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Upload className="w-5 h-5 text-white" />
+                                    </div>
+                                    <input type="file" ref={profileImageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                                 </div>
-                                <input type="file" ref={profileImageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                <p className="text-[10px] font-bold text-center text-slate-400 mt-3 uppercase tracking-wider">Click to change</p>
-                            </div>
-
-                            {/* Fields */}
-                            <div className="flex-1 space-y-5">
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Full Name</label>
+                                <div className="flex-1 w-full space-y-3">
                                     <input
                                         type="text"
                                         value={userName}
                                         onChange={(e) => setUserName(e.target.value)}
-                                        className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                        placeholder="Enter your name"
+                                        placeholder="Full Name"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Email Address</label>
-                                    <input
-                                        type="email"
-                                        value={userEmail}
-                                        onChange={(e) => setUserEmail(e.target.value)}
-                                        className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                        placeholder="name@example.com"
-                                    />
-                                </div>
-                                <button type="submit" className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 active:scale-[0.98]">
-                                    Save Changes
-                                </button>
-                            </div>
-                        </form>
-                    </section>
-
-                    {/* Branding Card */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/20">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                <Layout className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">App Branding</h2>
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Logo and application name</p>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleBrandingUpdate} className="flex flex-col md:flex-row gap-8">
-                            <div className="shrink-0">
-                                <div
-                                    className="group relative w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-inner bg-slate-100 dark:bg-slate-800 cursor-pointer flex items-center justify-center"
-                                    onClick={() => appLogoInputRef.current?.click()}
-                                >
-                                    {appLogo ? (
-                                        <img src={appLogo} alt="Logo" className="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-110" />
-                                    ) : (
-                                        <Zap className="w-10 h-10 text-slate-300" />
-                                    )}
-                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm">
-                                        <Upload className="w-8 h-8 text-white drop-shadow-lg" />
+                                    <div className="flex gap-3">
+                                        <input
+                                            type="email"
+                                            value={userEmail}
+                                            onChange={(e) => setUserEmail(e.target.value)}
+                                            placeholder="Email Address"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                        />
+                                        <button type="submit" className="px-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-500/20">
+                                            Save
+                                        </button>
                                     </div>
                                 </div>
-                                <input type="file" ref={appLogoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                                <p className="text-[10px] font-bold text-center text-slate-400 mt-3 uppercase tracking-wider">Click to change</p>
-                            </div>
+                            </form>
+                        </div>
+                    </section>
 
-                            <div className="flex-1 space-y-5">
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Application Name</label>
+                    {/* Branding Section */}
+                    <section>
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
+                            <Layout className="w-5 h-5 text-indigo-500" />
+                            Branding
+                        </h2>
+                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20">
+                            <form onSubmit={handleBrandingUpdate} className="flex flex-col md:flex-row gap-6 items-center">
+                                <div className="relative group cursor-pointer" onClick={() => appLogoInputRef.current?.click()}>
+                                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 flex items-center justify-center p-2">
+                                        {appLogo ? (
+                                            <img src={appLogo} alt="Logo" className="w-full h-full object-contain" />
+                                        ) : (
+                                            <Zap className="w-8 h-8 text-slate-300" />
+                                        )}
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Upload className="w-5 h-5 text-white" />
+                                    </div>
+                                    <input type="file" ref={appLogoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                </div>
+                                <div className="flex-1 w-full flex gap-3">
                                     <input
                                         type="text"
                                         value={appName}
                                         onChange={(e) => setAppName(e.target.value)}
-                                        className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                        placeholder="Application Name"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                                     />
-                                </div>
-                                <button type="submit" className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40 active:scale-[0.98]">
-                                    Update Branding
-                                </button>
-                            </div>
-                        </form>
-                    </section>
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-8">
-                    {/* Security Card */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/20">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                <ShieldCheck className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Security</h2>
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Password & Authentication</p>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handlePasswordChange} className="space-y-5">
-                            <div>
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Current Password</label>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        value={currentPassword}
-                                        onChange={(e) => setCurrentPassword(e.target.value)}
-                                        className="w-full pl-5 pr-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                    />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors">
-                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    <button type="submit" className="px-6 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20">
+                                        Update
                                     </button>
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">New Password</label>
+                            </form>
+                        </div>
+                    </section>
+
+                    {/* Password Section */}
+                    <section>
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
+                            <Lock className="w-5 h-5 text-emerald-500" />
+                            Login Password
+                        </h2>
+                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-900">
+                            <form onSubmit={handlePasswordChange} className="space-y-5">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Password</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            placeholder="Enter current password"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-10"
+                                        />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500">
+                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Password</label>
                                     <div className="relative">
                                         <input
                                             type={showNewPassword ? 'text' : 'password'}
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
-                                            className="w-full pl-5 pr-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                            placeholder="Enter new password"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-10"
                                         />
-                                        <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors">
+                                        <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500">
                                             {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Confirm</label>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Password</label>
                                     <input
                                         type={showNewPassword ? 'text' : 'password'}
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                        placeholder="Confirm new password"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                                     />
                                 </div>
-                            </div>
-                            <button type="submit" className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 active:scale-[0.98]">
-                                Change Password
-                            </button>
-                        </form>
+                                <button type="submit" className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98]">
+                                    Update Password
+                                </button>
+                            </form>
+                        </div>
                     </section>
 
-                    {/* Rate & Theme Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Rate Card */}
-                        <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/20 flex flex-col justify-between">
-                            <div>
-                                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-6">
-                                    <Zap className="w-6 h-6" />
-                                </div>
-                                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Electricity Rate</h2>
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-6">Cost per unit (kWh)</p>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Rate (PKR)</label>
-                                <div className="flex gap-3">
-                                    <input
-                                        type="number"
-                                        value={tempRate}
-                                        onChange={(e) => setTempRate(parseFloat(e.target.value) || 0)}
-                                        step="0.1"
-                                        min="0"
-                                        className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                                    />
-                                    <button onClick={handleRateChange} className="px-6 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 active:scale-[0.98]">
-                                        Update
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Theme Card */}
-                        <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/20 flex flex-col justify-between">
-                            <div>
-                                <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 mb-6">
-                                    <Palette className="w-6 h-6" />
-                                </div>
-                                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Theme</h2>
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-6">Interface appearance</p>
-                            </div>
-
-                            <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                                <button
-                                    onClick={() => onThemeChange('light')}
-                                    className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${currentTheme === 'light' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                >
-                                    Light
-                                </button>
-                                <button
-                                    onClick={() => onThemeChange('dark')}
-                                    className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${currentTheme === 'dark' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                >
-                                    Dark
+                    {/* Unit Price Section */}
+                    <section>
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
+                            <Zap className="w-5 h-5 text-amber-500" />
+                            Unit Price
+                        </h2>
+                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Rate Per Unit (PKR)</label>
+                            <div className="flex gap-3">
+                                <input
+                                    type="number"
+                                    value={tempRate}
+                                    onChange={(e) => setTempRate(parseFloat(e.target.value) || 0)}
+                                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-lg font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                                />
+                                <button onClick={handleRateChange} className="px-8 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-amber-500/20">
+                                    Save
                                 </button>
                             </div>
-                        </section>
-                    </div>
-
-                    {/* Data Management Card (Large) */}
-                    <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/20">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600 dark:text-violet-400">
-                                <Database className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Data Management</h2>
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Backup and restore database</p>
-                            </div>
+                            <p className="text-xs font-semibold text-slate-400 mt-3 ml-1">
+                                Current rate: <span className="text-slate-900 dark:text-white">Rs. {ratePerUnit.toFixed(2)}</span> per kWh
+                            </p>
                         </div>
+                    </section>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Export */}
-                            <div className="p-6 rounded-2xl bg-violet-50/50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-800/30 hover:border-violet-200 dark:hover:border-violet-700 transition-colors group">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform">
-                                        <FileJson className="w-6 h-6" />
-                                    </div>
-                                    <span className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider shadow-sm">
-                                        Safe
-                                    </span>
-                                </div>
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide mb-2">Export Backup</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-                                    Download a complete JSON snapshot of your shops, meters, readings, and invoices.
-                                </p>
-                                <button
-                                    onClick={handleExportData}
-                                    className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-violet-600/20 hover:shadow-violet-600/40 active:scale-[0.98] flex items-center justify-center gap-2"
-                                >
-                                    <Download className="w-4 h-4" />
-                                    Download Data
-                                </button>
-                            </div>
+                    {/* Theme Section */}
+                    <section>
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
+                            <Palette className="w-5 h-5 text-purple-500" />
+                            Theme
+                        </h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                onClick={() => onThemeChange('light')}
+                                className={`flex items-center justify-center gap-3 py-4 rounded-xl border-2 transition-all ${currentTheme === 'light'
+                                    ? 'border-slate-900 dark:border-white bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md'
+                                    : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                                    }`}
+                            >
+                                <Sun className="w-5 h-5" />
+                                <span className="font-bold text-sm">Light Mode</span>
+                            </button>
+                            <button
+                                onClick={() => onThemeChange('dark')}
+                                className={`flex items-center justify-center gap-3 py-4 rounded-xl border-2 transition-all ${currentTheme === 'dark'
+                                    ? 'border-slate-900 dark:border-white bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md'
+                                    : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                                    }`}
+                            >
+                                <Moon className="w-5 h-5" />
+                                <span className="font-bold text-sm">Dark Mode</span>
+                            </button>
+                        </div>
+                    </section>
 
-                            {/* Import */}
-                            <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-slate-600 dark:text-slate-400 group-hover:scale-110 transition-transform">
-                                        <Upload className="w-6 h-6" />
-                                    </div>
-                                    <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 rounded-full text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                        <AlertTriangle className="w-3 h-3" />
-                                        Caution
-                                    </span>
-                                </div>
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide mb-2">Restore Backup</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-                                    Restore system data from a backup file. This will <span className="font-bold text-red-500">overwrite</span> all current data.
-                                </p>
+                    {/* Backup & Restore Section */}
+                    <section>
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
+                            <Download className="w-5 h-5 text-emerald-500" />
+                            Backup & Restore
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button
+                                onClick={handleExportData}
+                                className="flex items-center justify-center gap-3 py-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all font-bold text-sm"
+                            >
+                                <Download className="w-5 h-5" />
+                                Download Back-up
+                            </button>
+                            <div className="relative">
                                 <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleImportData} />
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="w-full py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-[0.98] flex items-center justify-center gap-2"
+                                    className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all font-bold text-sm"
                                 >
-                                    <Upload className="w-4 h-4" />
-                                    Select File
+                                    <Upload className="w-5 h-5" />
+                                    Restore Backup
                                 </button>
                             </div>
                         </div>
                     </section>
+
+                    {/* Danger Zone */}
+                    <section className="pt-8 border-t border-red-100 dark:border-red-900/30">
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-red-600 dark:text-red-400 mb-5">
+                            <AlertTriangle className="w-5 h-5" />
+                            Danger Zone
+                        </h2>
+                        <div className="p-6 border border-red-100 dark:border-red-900/20 rounded-2xl bg-red-50/30 dark:bg-red-950/10">
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+                                <div className="space-y-1 text-center sm:text-left">
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">Wipe All Application Data</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
+                                        This will permanently delete all shop records, meter readings, invoices, and restore settings to default.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm('CRITICAL ACTION: WIPE ALL DATA?\n\nThis will permanently delete ALL shops, meters, readings, and billing history. This action cannot be undone.\n\nType "WIPE" to confirm.')) {
+                                            const confirmation = prompt('Please type "WIPE" to confirm data destruction:');
+                                            if (confirmation === 'WIPE') {
+                                                const { dbService } = await import('../services/dbService');
+                                                await dbService.wipeData();
+                                            }
+                                        }
+                                    }}
+                                    className="w-full sm:w-auto px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95"
+                                >
+                                    Wipe All Data
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* About Section */}
+                    <section className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button
+                            onClick={() => setIsAboutOpen(!isAboutOpen)}
+                            className="w-full flex items-center justify-between text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <Info className="w-5 h-5" />
+                                <span className="text-lg font-bold">About</span>
+                            </div>
+                            {isAboutOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
+                        <AnimatePresence>
+                            {isAboutOpen && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="pt-4 pb-2 text-sm text-slate-500 dark:text-slate-400 space-y-2 pl-8">
+                                        <p className="font-semibold">MeraMeter Utility Billing System</p>
+                                        <p>Version 1.2.0 (Stable)</p>
+                                        <p>© {new Date().getFullYear()} All rights reserved.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </section>
+
                 </div>
+
+
             </div>
         </div>
     );

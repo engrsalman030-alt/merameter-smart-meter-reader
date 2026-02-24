@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Zap, Lock, Mail, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Zap, Lock, Mail, AlertCircle, ShieldCheck, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface LoginProps {
@@ -49,44 +49,48 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#090B10] relative overflow-hidden font-sans">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-emerald-500/10 rounded-full blur-[140px] animate-pulse" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[140px] animate-pulse" />
-
-      {/* Grid Pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
-      />
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 relative overflow-hidden font-sans transition-colors duration-500">
+      {/* ─── BACKGROUND ELEMENTS ─── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-emerald-500/5 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-[20%] -right-[10%] w-[70%] h-[70%] bg-blue-500/5 rounded-full blur-[120px]" />
+        <div
+          className="absolute inset-0 opacity-[0.4] dark:opacity-[0.1]"
+          style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '32px 32px' }}
+        />
+      </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg p-6 relative z-10"
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10 px-6"
       >
-        <div className="bg-[#11141D]/80 backdrop-blur-3xl p-10 md:p-14 rounded-[3rem] border border-white/5 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.5)] space-y-10">
+        <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-black/50 backdrop-blur-xl">
 
-          {/* Header & Branding */}
-          <div className="text-center space-y-4">
+          {/* ─── HEADER ─── */}
+          <div className="text-center mb-10">
             <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              className="bg-gradient-to-br from-emerald-500 to-indigo-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/20 overflow-hidden"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-900/10 dark:shadow-black/30 border border-slate-100 dark:border-slate-700"
             >
               {appLogo ? (
                 <img src={appLogo} alt="App Logo" className="w-full h-full object-contain p-4" />
               ) : (
-                <Zap className="text-white w-10 h-10" />
+                <Zap className="text-emerald-500 w-10 h-10" />
               )}
             </motion.div>
-            <h2 className="text-4xl font-black text-white tracking-tight">{appName}</h2>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">{appName}</h2>
             <div className="flex items-center justify-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Secure Administrative Access</p>
+              <div className="h-px w-8 bg-slate-200 dark:bg-slate-800" />
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Admin Portal</p>
+              <div className="h-px w-8 bg-slate-200 dark:bg-slate-800" />
             </div>
           </div>
 
+          {/* ─── FORM ─── */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <AnimatePresence>
               {error && (
@@ -94,10 +98,12 @@ export default function Login({ onLogin }: LoginProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center gap-3 p-5 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20"
+                  className="overflow-hidden"
                 >
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-                  <p className="text-xs font-bold">{error}</p>
+                  <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-800/50">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <p className="text-xs font-bold">{error}</p>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -105,14 +111,16 @@ export default function Login({ onLogin }: LoginProps) {
             <div className="space-y-5">
               {/* Email Field */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Identity Endpoint</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
                 <div className="relative group">
-                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                  </div>
                   <input
                     required
                     type="email"
-                    placeholder="admin@platform.com"
-                    className="w-full pl-14 pr-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-bold text-white placeholder:text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 focus:bg-[#1A1F2B] outline-none transition-all"
+                    placeholder="admin@merameter.com"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                   />
@@ -121,23 +129,25 @@ export default function Login({ onLogin }: LoginProps) {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Security Cipher</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Password</label>
                 <div className="relative group">
-                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                  </div>
                   <input
                     required
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="w-full pl-14 pr-14 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-bold text-white placeholder:text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 focus:bg-[#1A1F2B] outline-none transition-all"
+                    className="w-full pl-12 pr-12 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors p-1"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -146,23 +156,27 @@ export default function Login({ onLogin }: LoginProps) {
             <button
               disabled={isLoading}
               type="submit"
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 group"
+              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 dark:shadow-white/5 hover:bg-emerald-600 dark:hover:bg-emerald-400 dark:hover:text-white hover:shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/30 dark:border-slate-900/30 border-t-white dark:border-t-slate-900 rounded-full animate-spin" />
               ) : (
                 <>
-                  Establish Session
-                  <Lock className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  Sign In
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="pt-8 border-t border-white/5 flex flex-col items-center gap-4">
-            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
-              Authorized Personnel Only
-            </p>
+          {/* ─── FOOTER ─── */}
+          <div className="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-full">
+              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Secure 256-bit Encrypted Connection
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>

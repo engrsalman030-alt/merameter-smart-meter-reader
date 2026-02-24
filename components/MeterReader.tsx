@@ -14,7 +14,7 @@ import {
   Pencil,
 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
-import { analyzeMeterImage } from '../services/aiService';
+import { hybridService } from '../services/hybridService';
 import { Shop, Meter, MeterReading, Invoice } from '../types';
 import InvoiceTemplate from './InvoiceTemplate';
 
@@ -164,7 +164,7 @@ const MeterReader: React.FC<Props> = ({ onCapture, shops, meters, ratePerUnit, g
 
     try {
       const knownSerials = meters.map(m => m.serialNumber);
-      const result = await analyzeMeterImage(img, knownSerials);
+      const result = await hybridService.analyzeImage(img, knownSerials);
       setAnalysisResult(result);
     } catch (err: any) {
       setError(err.message || 'AI analysis failed. Please retry.');

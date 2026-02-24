@@ -4,13 +4,13 @@ console.log("API_KEY:", process.env.API_KEY);
 
 import express from 'express';
 import cors from 'cors';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '20mb' })); // accept big images
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenerativeAI(process.env.API_KEY);
 
 app.post('/api/analyze', async (req, res) => {
   try {
@@ -29,50 +29,32 @@ app.post('/api/analyze', async (req, res) => {
       ? `\nHere is a list of known valid serial numbers for existing meters: ${knownSerialNumbers.join(', ')}. If you see a serial number that closely matches one of these, STRONGLY prefer outputting the exact matching known serial number.`
       : '';
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", // valid model
-      contents: [
-        {
-          inlineData: {
-            mimeType,
-            data: rawData
-          }
-        },
-        {
-          text: `You are an expert utility meter inspector in Pakistan.
-Extract the following information from the meter photo carefully:
-1. Meter serial number (often near a barcode or labeled "Sr No.", "No.", etc.)${knownSerialsText}
-2. Current cumulative reading in kWh (often the largest number, ignore decimals if hard to read, look for "kWh")
-3. Current month consumed units (if clearly visible and separated from the main reading)
-
-Return ONLY valid JSON. If you are very confident about the serial number but less so about the reading, still return high confidence for the serial number.`
-        }
-      ],
-      config: {
+    const model = ai.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            serialNumber: { type: Type.STRING },
-            readingValue: { type: Type.NUMBER },
-            consumedUnits: { type: Type.NUMBER, nullable: true },
-            confidence: { type: Type.NUMBER },
-            explanation: { type: Type.STRING }
-          },
-          required: ["serialNumber", "readingValue", "confidence"]
-        }
       }
     });
 
-    // Sometimes the AI wraps JSON in markdown, so strip ```json ... ```
-    let text = response.text.trim();
+    const prompt = `You are an expert utility meter inspector in Pakistan.
+Extract: 1. Serial number. 2. Current reading(kWh). 3. Consumed units.
+JSON keys: "serialNumber", "readingValue", "consumedUnits", "confidence", "explanation".
+${knownSerialsText}`;
+
+    const result = await model.generateContent([
+      { inlineData: { mimeType, data: rawData } },
+      { text: prompt }
+    ]);
+
+    const resultResponse = await result.response;
+    let text = resultResponse.text().trim();
     if (text.startsWith("```")) {
       const match = text.match(/```(?:json)?\s*([\s\S]+?)```/i);
       if (match) text = match[1];
     }
 
-    const result = JSON.parse(text);
-    res.json(result);
+    const parsedResult = JSON.parse(text);
+    res.json(parsedResult);
 
   } catch (err) {
     console.error("Server AI Error:", err);

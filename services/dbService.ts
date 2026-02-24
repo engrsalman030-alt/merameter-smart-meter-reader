@@ -1,69 +1,216 @@
 
-import { openDB, IDBPDatabase } from 'idb';
+import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { Shop, Meter, MeterReading, Invoice } from '../types';
 
-const DB_NAME = 'merameter_db';
-const DB_VERSION = 2; // Incremented version for schema change
+const DB_NAME = 'merameter_db.sqlite3';
 
 class DBService {
-  private dbPromise: Promise<IDBPDatabase>;
+  private db: any = null;
+  private initPromise: Promise<void>;
 
   constructor() {
-    this.dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('shops')) db.createObjectStore('shops', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('meters')) db.createObjectStore('meters', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('readings')) db.createObjectStore('readings', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('invoices')) db.createObjectStore('invoices', { keyPath: 'id' });
+    this.initPromise = this.init();
+  }
+
+  private async init() {
+    try {
+      const sqlite3 = await sqlite3InitModule({
+        print: console.log,
+        error: console.error,
+        locateFile: (file: string) => {
+          if (file.endsWith('.wasm')) {
+            return `/sqlite-wasm/${file}`;
+          }
+          return file;
+        },
+      });
+
+      if ('opfs' in sqlite3) {
+        this.db = new sqlite3.oo1.OpfsDb('/merameter_db.sqlite3');
+        console.log('Using OPFS for SQLite storage');
+      } else {
+        this.db = new sqlite3.oo1.JsStorageDb('local');
+        console.log('Using local storage for SQLite storage');
+      }
+
+      // Initialize schema
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS shops (
+          id TEXT PRIMARY KEY,
+          name TEXT,
+          ownerName TEXT,
+          cnic TEXT,
+          phone TEXT,
+          address TEXT,
+          meterId TEXT,
+          shopNumber TEXT,
+          customerImage TEXT,
+          registrationDate TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS meters (
+          id TEXT PRIMARY KEY,
+          serialNumber TEXT,
+          shopId TEXT,
+          installDate TEXT,
+          lastReading REAL,
+          meterImage TEXT,
+          initialReadingBefore REAL,
+          initialReadingAfter REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS readings (
+          id TEXT PRIMARY KEY,
+          meterId TEXT,
+          shopId TEXT,
+          readingValue REAL,
+          previousReadingValue REAL,
+          photoUrl TEXT,
+          readingDate TEXT,
+          timestamp TEXT,
+          status TEXT,
+          syncStatus TEXT,
+          readerName TEXT,
+          ocrConfidence REAL,
+          confidence REAL,
+          manualOverride INTEGER,
+          notes TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS invoices (
+          id TEXT PRIMARY KEY,
+          readingId TEXT,
+          shopId TEXT,
+          billingPeriod TEXT,
+          units REAL,
+          ratePerUnit REAL,
+          totalAmount REAL,
+          issuedDate TEXT,
+          status TEXT,
+          paidStatus INTEGER
+        );
+      `);
+    } catch (err) {
+      console.error('Failed to initialize SQLite:', err);
+    }
+  }
+
+  private async ensureInit() {
+    await this.initPromise;
+    if (!this.db) throw new Error('Database not initialized');
+  }
+
+  async getAll<T>(tableName: string): Promise<T[]> {
+    await this.ensureInit();
+    const result: T[] = [];
+    this.db.exec({
+      sql: `SELECT * FROM ${tableName}`,
+      rowMode: 'object',
+      callback: (row: any) => {
+        // Post-process rows to handle SQLite types (e.g., booleans)
+        if (tableName === 'invoices') {
+          row.paidStatus = !!row.paidStatus;
+        }
+        if (tableName === 'readings') {
+          row.manualOverride = !!row.manualOverride;
+        }
+        result.push(row);
       },
+    });
+    return result;
+  }
+
+  async put(tableName: string, data: any) {
+    await this.ensureInit();
+
+    // Convert objects to SQL-friendly values
+    const preparedData = { ...data };
+    if (tableName === 'invoices' && typeof preparedData.paidStatus === 'boolean') {
+      preparedData.paidStatus = preparedData.paidStatus ? 1 : 0;
+    }
+    if (tableName === 'readings' && typeof preparedData.manualOverride === 'boolean') {
+      preparedData.manualOverride = preparedData.manualOverride ? 1 : 0;
+    }
+
+    const keys = Object.keys(preparedData);
+    const placeholders = keys.map(() => '?').join(', ');
+    const values = Object.values(preparedData);
+
+    const sql = `INSERT OR REPLACE INTO ${tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
+
+    this.db.exec({
+      sql,
+      bind: values,
     });
   }
 
-  async getAll<T>(storeName: string): Promise<T[]> {
-    const db = await this.dbPromise;
-    return db.getAll(storeName);
+  async delete(tableName: string, id: string) {
+    await this.ensureInit();
+    this.db.exec({
+      sql: `DELETE FROM ${tableName} WHERE id = ?`,
+      bind: [id],
+    });
   }
-
-  async put(storeName: string, data: any) {
-    const db = await this.dbPromise;
-    return db.put(storeName, data);
-  }
-
-  async delete(storeName: string, id: string) {
-    const db = await this.dbPromise;
-    return db.delete(storeName, id);
-  }
-
 
   async restoreData(data: { shops: string; meters: string; readings: string; invoices: string }) {
-    const db = await this.dbPromise;
-    const tx = db.transaction(['shops', 'meters', 'readings', 'invoices'], 'readwrite');
+    await this.ensureInit();
 
-    // Parse data (they come as JSON strings from localStorage in the export)
-    const shops = JSON.parse(data.shops || '[]');
-    const meters = JSON.parse(data.meters || '[]');
-    const readings = JSON.parse(data.readings || '[]');
-    const invoices = JSON.parse(data.invoices || '[]');
+    try {
+      this.db.exec('BEGIN TRANSACTION');
 
-    // Clear and restore
-    await tx.objectStore('shops').clear();
-    await tx.objectStore('meters').clear();
-    await tx.objectStore('readings').clear();
-    await tx.objectStore('invoices').clear();
+      this.db.exec('DELETE FROM shops');
+      this.db.exec('DELETE FROM meters');
+      this.db.exec('DELETE FROM readings');
+      this.db.exec('DELETE FROM invoices');
 
-    for (const s of shops) await tx.objectStore('shops').put(s);
-    for (const m of meters) await tx.objectStore('meters').put(m);
-    for (const r of readings) await tx.objectStore('readings').put(r);
-    for (const i of invoices) await tx.objectStore('invoices').put(i);
+      const shops = JSON.parse(data.shops || '[]');
+      const meters = JSON.parse(data.meters || '[]');
+      const readings = JSON.parse(data.readings || '[]');
+      const invoices = JSON.parse(data.invoices || '[]');
 
-    // Also update localStorage keys to match current app expects
-    localStorage.setItem('shops', data.shops);
-    localStorage.setItem('meters', data.meters);
-    localStorage.setItem('readings', data.readings);
-    localStorage.setItem('invoices', data.invoices);
+      for (const s of shops) await this.put('shops', s);
+      for (const m of meters) await this.put('meters', m);
+      for (const r of readings) await this.put('readings', r);
+      for (const i of invoices) await this.put('invoices', i);
 
-    await tx.done;
-    window.location.reload();
+      this.db.exec('COMMIT');
+
+      // Update localStorage keys as well for compatibility
+      localStorage.setItem('shops', data.shops);
+      localStorage.setItem('meters', data.meters);
+      localStorage.setItem('readings', data.readings);
+      localStorage.setItem('invoices', data.invoices);
+
+      window.location.reload();
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      console.error('Failed to restore data:', err);
+      throw err;
+    }
+  }
+
+  async wipeData() {
+    await this.ensureInit();
+    try {
+      this.db.exec('BEGIN TRANSACTION');
+      this.db.exec('DELETE FROM shops');
+      this.db.exec('DELETE FROM meters');
+      this.db.exec('DELETE FROM readings');
+      this.db.exec('DELETE FROM invoices');
+      this.db.exec('COMMIT');
+
+      localStorage.removeItem('shops');
+      localStorage.removeItem('meters');
+      localStorage.removeItem('readings');
+      localStorage.removeItem('invoices');
+      localStorage.removeItem('isAdminLoggedIn');
+
+      window.location.href = '/';
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      console.error('Failed to wipe data:', err);
+      throw err;
+    }
   }
 }
 

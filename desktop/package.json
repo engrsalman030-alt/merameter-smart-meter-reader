@@ -1,0 +1,61 @@
+{
+    "name": "merameter-desktop",
+    "version": "1.0.0",
+    "description": "Smart Meter Reader Pakistan - Desktop Edition",
+    "main": "dist/main/main.js",
+    "author": "MeraMeter Team",
+    "license": "MIT",
+    "scripts": {
+        "dev": "vite",
+        "build": "npm run build:main && npm run build:renderer && electron-builder",
+        "build:main": "tsc -p tsconfig.main.json",
+        "build:renderer": "vite build",
+        "preview": "vite preview",
+        "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+        "electron:build": "npm run build",
+        "postinstall": "electron-rebuild"
+    },
+    "build": {
+        "appId": "com.merameter.app",
+        "productName": "MeraMeter",
+        "directories": {
+            "output": "release"
+        },
+        "files": [
+            "dist/**/*",
+            "package.json"
+        ],
+        "win": {
+            "target": "portable"
+        }
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.21.0",
+        "better-sqlite3": "^11.5.0",
+        "dotenv": "^17.3.1",
+        "framer-motion": "^12.34.2",
+        "html-to-image": "^1.11.13",
+        "lucide-react": "^0.574.0",
+        "nanoid": "^5.1.6",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "recharts": "^3.7.0"
+    },
+    "devDependencies": {
+        "@electron/rebuild": "^3.7.2",
+        "@types/better-sqlite3": "^7.6.12",
+        "@types/node": "^22.14.0",
+        "@types/react": "^19.0.8",
+        "@types/react-dom": "^19.0.3",
+        "@vitejs/plugin-react": "^5.0.0",
+        "autoprefixer": "^10.4.20",
+        "concurrently": "^9.1.2",
+        "electron": "^34.0.2",
+        "electron-builder": "^25.1.8",
+        "postcss": "^8.5.1",
+        "tailwindcss": "^3.4.17",
+        "typescript": "~5.7.3",
+        "vite": "^6.1.0",
+        "wait-on": "^8.0.2"
+    }
+}
