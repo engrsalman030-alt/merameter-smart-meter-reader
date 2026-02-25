@@ -66,9 +66,22 @@ export interface Invoice {
   paidStatus?: boolean;
 }
 
+export interface Setting {
+  key: string;
+  value: string;
+}
+
+export interface SecurityQuestion {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 export interface AppState {
   shops: Shop[];
   meters: Meter[];
   readings: MeterReading[];
   invoices: Invoice[];
+  settings?: Setting[];
+  securityQuestions?: SecurityQuestion[];
 }
