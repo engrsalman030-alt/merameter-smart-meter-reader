@@ -9,11 +9,9 @@ import {
   Save,
   Zap,
   Camera,
-  Image as ImageIcon,
   Hash,
   Calendar,
-  X,
-  Plus
+  X
 } from 'lucide-react';
 import { Shop, Meter } from '../types';
 import { nanoid } from 'nanoid';
@@ -45,12 +43,9 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
   });
 
   const [customerImage, setCustomerImage] = useState<string | null>(editShop?.customerImage || null);
-  const [meterImage, setMeterImage] = useState<string | null>(editMeter?.meterImage || null);
-
   const customerFileRef = useRef<HTMLInputElement>(null);
-  const meterFileRef = useRef<HTMLInputElement>(null);
   const customerCameraRef = useRef<HTMLInputElement>(null);
-  const meterCameraRef = useRef<HTMLInputElement>(null);
+const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const compressImage = (dataUrl: string): Promise<string> => {
     return new Promise((resolve) => {
@@ -111,48 +106,72 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cnicDigits = formData.cnic.replace(/\D/g, '');
-    const phoneDigits = formData.phone.replace(/\D/g, '');
+  e.preventDefault();
 
-    if (cnicDigits.length !== 13) {
-      alert("Invalid CNIC: Must be exactly 13 digits");
-      return;
-    }
-    if (phoneDigits.length < 10) {
-      alert("Invalid Phone number.");
-      return;
-    }
+  if (!validateForm()) {
+    // Stop submission if validation fails
+    return;
+  }
 
-    const shopId = isEditMode ? editShop!.id : nanoid();
-    const meterId = isEditMode ? editMeter!.id : nanoid();
+  const shopId = isEditMode ? editShop!.id : nanoid();
+  const meterId = isEditMode ? editMeter!.id : nanoid();
 
-    const shop: Shop = {
-      id: shopId,
-      name: formData.name,
-      ownerName: formData.ownerName,
-      cnic: formData.cnic,
-      phone: formData.phone,
-      address: formData.address,
-      meterId: meterId,
-      shopNumber: formData.shopNumber,
-      customerImage: customerImage || undefined,
-      registrationDate: new Date(formData.registrationDate).toISOString(),
-    };
-
-    const meter: Meter = {
-      id: meterId,
-      serialNumber: formData.meterSerial,
-      shopId: shopId,
-      installDate: isEditMode ? editMeter!.installDate : new Date().toISOString(),
-      lastReading: parseFloat(formData.initialReadingBefore) || 0,
-      meterImage: meterImage || undefined,
-      initialReadingBefore: parseFloat(formData.initialReadingBefore) || 0,
-      initialReadingAfter: formData.initialReadingAfter ? parseFloat(formData.initialReadingAfter) : undefined,
-    };
-
-    onSave(shop, meter);
+  const shop: Shop = {
+    id: shopId,
+    name: formData.name,
+    ownerName: formData.ownerName,
+    cnic: formData.cnic,
+    phone: formData.phone,
+    address: formData.address,
+    meterId: meterId,
+    shopNumber: formData.shopNumber,
+    customerImage: customerImage || undefined,
+    registrationDate: new Date(formData.registrationDate).toISOString(),
   };
+
+  const meter: Meter = {
+    id: meterId,
+    serialNumber: formData.meterSerial,
+    shopId: shopId,
+    installDate: isEditMode ? editMeter!.installDate : new Date().toISOString(),
+    lastReading: parseFloat(formData.initialReadingBefore) || 0,
+    initialReadingBefore: parseFloat(formData.initialReadingBefore) || 0,
+    initialReadingAfter: formData.initialReadingAfter ? parseFloat(formData.initialReadingAfter) : undefined,
+  };
+
+  onSave(shop, meter);
+};
+
+const validateForm = () => {
+  const newErrors: { [key: string]: string } = {};
+
+  if (!formData.name.trim()) newErrors.name = "Shop name is required";
+  if (!formData.ownerName.trim()) newErrors.ownerName = "Owner name is required";
+
+  const cnicDigits = formData.cnic.replace(/\D/g, '');
+  if (!formData.cnic.trim()) newErrors.cnic = "CNIC is required";
+  else if (cnicDigits.length !== 13) newErrors.cnic = "CNIC must be 13 digits";
+
+  const phoneDigits = formData.phone.replace(/\D/g, '');
+  if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+  else if (phoneDigits.length < 10) newErrors.phone = "Phone number must be at least 10 digits";
+
+  if (!formData.shopNumber.trim()) newErrors.shopNumber = "Shop number is required";
+  if (!formData.address.trim()) newErrors.address = "Address is required";
+  if (!formData.meterSerial.trim()) newErrors.meterSerial = "Meter serial number is required";
+
+  // Optional: initialReadingBefore must be numeric
+  if (formData.initialReadingBefore && isNaN(Number(formData.initialReadingBefore))) {
+    newErrors.initialReadingBefore = "Current reading must be a number";
+  }
+
+  if (formData.initialReadingAfter && isNaN(Number(formData.initialReadingAfter))) {
+    newErrors.initialReadingAfter = "Reading after must be a number";
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   const InputLabel = ({ children }: { children: React.ReactNode }) => (
     <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">
@@ -173,51 +192,43 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
   }: any) => (
     <div className="flex flex-col gap-3">
       <InputLabel>{label}</InputLabel>
-      <div className="relative group">
-        {image ? (
-          <div className="relative w-full h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 shadow-sm">
-            <img src={image} alt="" className="w-full h-full object-cover" />
-            <button
-              onClick={onClear}
-              className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="w-full h-40 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col items-center justify-center gap-3 transition-colors hover:border-slate-300 dark:hover:border-slate-700">
-            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-slate-400" />
-            </div>
-            <div className="flex gap-2">
-              {!isReadOnly && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => cameraRef.current?.click()}
-                    className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest hover:underline"
-                  >
-                    Use Camera
-                  </button>
-                  <span className="text-[10px] text-slate-300">|</span>
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:underline"
-                  >
-                    Upload File
-                  </button>
-                </>
-              )}
-              {isReadOnly && (
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Viewing Only</span>
-              )}
-            </div>
-            <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={onFileChange} />
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFileChange} />
-          </div>
-        )}
-      </div>
+  {image ? (
+  <div className="relative w-full h-48 rounded-xl overflow-hidden border-2 border-dashed border-slate-200 dark:border-slate-700 shadow-sm">
+    <img 
+      src={image} 
+      alt="Preview" 
+      className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900/10"
+    />
+    <button
+      onClick={onClear}
+      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition-colors"
+    >
+      <X className="w-4 h-4" />
+    </button>
+  </div>
+) : (
+  <div className="w-full h-48 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/10 flex flex-col items-center justify-center gap-2 transition hover:border-slate-300 dark:hover:border-slate-500">
+    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+      <Icon className="w-5 h-5 text-slate-400" />
+    </div>
+    <div className="flex gap-2 text-[10px] font-bold uppercase">
+      {!isReadOnly && (
+        <>
+          <button type="button" onClick={() => cameraRef.current?.click()} className="text-emerald-600 dark:text-emerald-400 hover:underline">
+            Camera
+          </button>
+          <span className="text-slate-300">|</span>
+          <button type="button" onClick={() => fileRef.current?.click()} className="text-slate-400 hover:underline">
+            Upload
+          </button>
+        </>
+      )}
+      {isReadOnly && <span className="text-slate-400 italic">Viewing Only</span>}
+    </div>
+    <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={onFileChange} />
+    <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFileChange} />
+  </div>
+)}
     </div>
   );
 
@@ -265,6 +276,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                       value={formData.shopNumber}
                       onChange={e => setFormData({ ...formData, shopNumber: e.target.value })}
                     />
+                    {errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.shopNumber}</p>}
                   </div>
                   <div className="col-span-1">
                     <InputLabel>Reg. Date</InputLabel>
@@ -285,6 +297,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
                     />
+                    {errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.name}</p>}
                   </div>
                   <div className="col-span-2">
                     <InputLabel>Physical Address</InputLabel>
@@ -295,6 +308,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                       value={formData.address}
                       onChange={e => setFormData({ ...formData, address: e.target.value })}
                     />
+                    {errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.address}</p>}
                   </div>
                 </div>
               </section>
@@ -314,6 +328,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                       value={formData.ownerName}
                       onChange={e => setFormData({ ...formData, ownerName: e.target.value })}
                     />
+                    {errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.owerName}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -325,6 +340,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                         value={formData.cnic}
                         onChange={e => setFormData({ ...formData, cnic: maskCnic(e.target.value) })}
                       />
+                      {errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.cnic}</p>}
                     </div>
                     <div>
                       <InputLabel>Mobile Number</InputLabel>
@@ -335,6 +351,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                         value={formData.phone}
                         onChange={e => setFormData({ ...formData, phone: maskPhone(e.target.value) })}
                       />
+                      {errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.phone}</p>}
                     </div>
                   </div>
                 </div>
@@ -358,6 +375,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                       value={formData.meterSerial}
                       onChange={e => setFormData({ ...formData, meterSerial: e.target.value })}
                     />
+                    {errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.meterSerial}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -370,6 +388,7 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
                         value={formData.initialReadingBefore}
                         onChange={e => setFormData({ ...formData, initialReadingBefore: e.target.value })}
                       />
+                      
                     </div>
                     <div>
                       <InputLabel>Reading After (Opt)</InputLabel>
@@ -389,27 +408,18 @@ const ShopForm: React.FC<Props> = ({ onSave, onCancel, editShop, editMeter, isRe
 
               <section className="space-y-6">
                 <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-purple-500" />
+                  <User className="w-4 h-4 text-purple-500" />
                   <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">Media Verification</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1">
                   <PhotoUpload
-                    label="Customer Photo"
+                    label="Customer / Proprietor Photo"
                     image={customerImage}
                     onClear={() => setCustomerImage(null)}
                     fileRef={customerFileRef}
                     cameraRef={customerCameraRef}
                     onFileChange={(e) => handleImageCapture(e, setCustomerImage)}
                     icon={User}
-                  />
-                  <PhotoUpload
-                    label="Meter Physical Photo"
-                    image={meterImage}
-                    onClear={() => setMeterImage(null)}
-                    fileRef={meterFileRef}
-                    cameraRef={meterCameraRef}
-                    onFileChange={(e) => handleImageCapture(e, setMeterImage)}
-                    icon={Zap}
                   />
                 </div>
               </section>

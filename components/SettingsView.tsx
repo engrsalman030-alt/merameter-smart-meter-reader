@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Lock,
@@ -17,8 +17,10 @@ import {
     Info,
     ChevronDown,
     ChevronUp,
-    X
+    X,
+    ShieldQuestion
 } from 'lucide-react';
+import { SecurityQuestion } from '../types';
 
 interface SettingsViewProps {
     currentTheme: 'light' | 'dark';
@@ -41,6 +43,31 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [tempRate, setTempRate] = useState(ratePerUnit);
+
+    // Security Questions State
+    const [securityQuestions, setSecurityQuestions] = useState<SecurityQuestion[]>([]);
+    const [isSavingQuestions, setIsSavingQuestions] = useState(false);
+
+    useEffect(() => {
+        const fetchQuestions = async () => {
+            try {
+                const { dbService } = await import('../services/dbService');
+                const questions = await dbService.getAll<SecurityQuestion>('security_questions');
+                if (questions.length === 0) {
+                    // Initialize with empty questions if none exist
+                    setSecurityQuestions([
+                        { id: '1', question: '', answer: '' },
+                        { id: '2', question: '', answer: '' }
+                    ]);
+                } else {
+                    setSecurityQuestions(questions);
+                }
+            } catch (err) {
+                console.error('Failed to fetch security questions:', err);
+            }
+        };
+        fetchQuestions();
+    }, []);
 
     // User Profile State
     const [userName, setUserName] = useState(localStorage.getItem('userName') || 'Admin User');
@@ -138,7 +165,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             setPasswordMessage({ type: 'error', text: 'Rate must be greater than 0' });
             return;
         }
-        localStorage.setItem('ratePerUnit', tempRate.toString());
+        localStorage.setItem('billingRate', tempRate.toString());
         onRateChange(tempRate);
         setPasswordMessage({ type: 'success', text: 'Rate updated successfully' });
         setTimeout(() => setPasswordMessage(null), 2000);
@@ -152,6 +179,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             const meters = await dbService.getAll('meters');
             const readings = await dbService.getAll('readings');
             const invoices = await dbService.getAll('invoices');
+            const settings = await dbService.getAll('settings');
+            const security_questions = await dbService.getAll('security_questions');
 
             const data = {
                 exportDate: new Date().toISOString(),
@@ -159,6 +188,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 meters: JSON.stringify(meters),
                 readings: JSON.stringify(readings),
                 invoices: JSON.stringify(invoices),
+                settings: JSON.stringify(settings),
+                security_questions: JSON.stringify(security_questions),
             };
 
             const dataStr = JSON.stringify(data, null, 2);
@@ -203,325 +234,462 @@ const SettingsView: React.FC<SettingsViewProps> = ({
         reader.readAsText(file);
     };
 
+    const handleSaveSecurityQuestions = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSavingQuestions(true);
+        try {
+            const { dbService } = await import('../services/dbService');
+            for (const q of securityQuestions) {
+                if (q.question.trim() && q.answer.trim()) {
+                    await dbService.put('security_questions', q);
+                }
+            }
+            setPasswordMessage({ type: 'success', text: 'Security questions updated' });
+        } catch (err) {
+            setPasswordMessage({ type: 'error', text: 'Failed to save security questions' });
+        } finally {
+            setIsSavingQuestions(false);
+            setTimeout(() => setPasswordMessage(null), 3000);
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 p-4 md:p-8 flex justify-center items-start font-sans animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden relative">
+        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 p-4 md:p-6 lg:p-8 font-sans transition-colors duration-300">
+            {/* Toast */}
+            <AnimatePresence>
+                {passwordMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, x: '-50%' }}
+                        animate={{ opacity: 1, y: 20, x: '-50%' }}
+                        exit={{ opacity: 0, y: -20, x: '-50%' }}
+                        className={`fixed top-0 left-1/2 z-50 px-6 py-3 rounded-full shadow-xl flex items-center gap-3 border backdrop-blur-md ${passwordMessage.type === 'success'
+                            ? 'bg-emerald-500/90 text-white border-emerald-400/50'
+                            : 'bg-red-500/90 text-white border-red-400/50'
+                            }`}
+                    >
+                        {passwordMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                        <p className="text-sm font-bold tracking-wide">{passwordMessage.text}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                {/* Toast Notification */}
-                <AnimatePresence>
-                    {passwordMessage && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -50, x: '-50%' }}
-                            animate={{ opacity: 1, y: 20, x: '-50%' }}
-                            exit={{ opacity: 0, y: -50, x: '-50%' }}
-                            className={`fixed top-0 left-1/2 z-50 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border backdrop-blur-md ${passwordMessage.type === 'success'
-                                ? 'bg-emerald-500/90 text-white border-emerald-400/50'
-                                : 'bg-red-500/90 text-white border-red-400/50'
-                                }`}
-                        >
-                            {passwordMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-                            <p className="text-xs font-bold uppercase tracking-wide">{passwordMessage.text}</p>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
+            <div className="max-w-6xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 sticky top-0 z-10">
-                    <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Settings</h1>
-                    <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400">
-                        <X className="w-5 h-5" />
+                <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Settings</h1>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Manage your application preferences</p>
+                    </div>
+                    <button
+                        onClick={() => window.history.back()}
+                        className="p-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    >
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                <div className="p-6 md:p-8 space-y-10">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
-                    {/* Profile Section */}
-                    <section>
-                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
-                            <Users className="w-5 h-5 text-blue-500" />
-                            Profile Settings
-                        </h2>
-                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20">
-                            <form onSubmit={handleProfileUpdate} className="flex flex-col md:flex-row gap-6 items-center">
-                                <div className="relative group cursor-pointer" onClick={() => profileImageInputRef.current?.click()}>
-                                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm">
-                                        {userImage ? (
-                                            <img src={userImage} alt="Profile" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                                <Users className="w-8 h-8 text-slate-400" />
+                    {/* Left Column */}
+                    <div className="xl:col-span-7 space-y-6">
+
+                        {/* Profile Card */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400">
+                                    <Users className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Profile Settings</h2>
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <form onSubmit={handleProfileUpdate} className="flex flex-col md:flex-row gap-8 items-start">
+                                    <div className="flex-shrink-0 mx-auto md:mx-0">
+                                        <div
+                                            className="relative group cursor-pointer w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 dark:border-slate-800 shadow-inner"
+                                            onClick={() => profileImageInputRef.current?.click()}
+                                        >
+                                            {userImage ? (
+                                                <img src={userImage} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                                    <Users className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                <Upload className="w-8 h-8 text-white" />
                                             </div>
-                                        )}
+                                        </div>
+                                        <p className="text-xs text-center text-slate-400 mt-3 font-medium">Tap to change</p>
+                                        <input type="file" ref={profileImageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                                     </div>
-                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Upload className="w-5 h-5 text-white" />
-                                    </div>
-                                    <input type="file" ref={profileImageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                </div>
-                                <div className="flex-1 w-full space-y-3">
-                                    <input
-                                        type="text"
-                                        value={userName}
-                                        onChange={(e) => setUserName(e.target.value)}
-                                        placeholder="Full Name"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    />
-                                    <div className="flex gap-3">
-                                        <input
-                                            type="email"
-                                            value={userEmail}
-                                            onChange={(e) => setUserEmail(e.target.value)}
-                                            placeholder="Email Address"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                        />
-                                        <button type="submit" className="px-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-500/20">
-                                            Save
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
 
-                    {/* Branding Section */}
-                    <section>
-                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
-                            <Layout className="w-5 h-5 text-indigo-500" />
-                            Branding
-                        </h2>
-                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20">
-                            <form onSubmit={handleBrandingUpdate} className="flex flex-col md:flex-row gap-6 items-center">
-                                <div className="relative group cursor-pointer" onClick={() => appLogoInputRef.current?.click()}>
-                                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 flex items-center justify-center p-2">
-                                        {appLogo ? (
-                                            <img src={appLogo} alt="Logo" className="w-full h-full object-contain" />
-                                        ) : (
-                                            <Zap className="w-8 h-8 text-slate-300" />
-                                        )}
+                                    <div className="flex-1 w-full space-y-5">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
+                                            <input
+                                                type="text"
+                                                value={userName}
+                                                onChange={(e) => setUserName(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                placeholder="Admin User"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
+                                            <input
+                                                type="email"
+                                                value={userEmail}
+                                                onChange={(e) => setUserEmail(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                placeholder="admin@example.com"
+                                            />
+                                        </div>
+                                        <div className="pt-2">
+                                            <button type="submit" className="w-full md:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95">
+                                                Save Changes
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Upload className="w-5 h-5 text-white" />
-                                    </div>
-                                    <input type="file" ref={appLogoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                </form>
+                            </div>
+                        </section>
+
+                        {/* Branding Card */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
+                                    <Layout className="w-5 h-5" />
                                 </div>
-                                <div className="flex-1 w-full flex gap-3">
-                                    <input
-                                        type="text"
-                                        value={appName}
-                                        onChange={(e) => setAppName(e.target.value)}
-                                        placeholder="Application Name"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                                    />
-                                    <button type="submit" className="px-6 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20">
-                                        Update
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Branding</h2>
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <form onSubmit={handleBrandingUpdate} className="flex flex-col md:flex-row gap-8 items-center">
+                                    <div
+                                        className="relative group cursor-pointer w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors bg-slate-50 dark:bg-slate-800/50"
+                                        onClick={() => appLogoInputRef.current?.click()}
+                                    >
+                                        {appLogo ? (
+                                            <img src={appLogo} alt="Logo" className="w-full h-full object-contain p-2" />
+                                        ) : (
+                                            <Zap className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Upload className="w-6 h-6 text-white" />
+                                        </div>
+                                        <input type="file" ref={appLogoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                    </div>
+
+                                    <div className="flex-1 w-full flex flex-col sm:flex-row gap-4">
+                                        <div className="flex-1 space-y-2">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Application Name</label>
+                                            <input
+                                                type="text"
+                                                value={appName}
+                                                onChange={(e) => setAppName(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                                placeholder="MeraMeter"
+                                            />
+                                        </div>
+                                        <div className="flex items-end">
+                                            <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95 h-[50px]">
+                                                Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </section>
+
+                        {/* Theme Card */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
+                                    <Palette className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Appearance</h2>
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <button
+                                        onClick={() => onThemeChange('light')}
+                                        className={`group relative flex items-center p-4 rounded-2xl border-2 transition-all duration-200 ${currentTheme === 'light'
+                                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                            : 'border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700'
+                                            }`}
+                                    >
+                                        <div className={`p-3 rounded-full mr-4 ${currentTheme === 'light' ? 'bg-white text-purple-600 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                                            <Sun className="w-6 h-6" />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className={`block font-bold ${currentTheme === 'light' ? 'text-purple-900 dark:text-purple-100' : 'text-slate-600 dark:text-slate-400'}`}>Light Mode</span>
+                                            <span className="text-xs text-slate-500">Clean & bright interface</span>
+                                        </div>
+                                        {currentTheme === 'light' && <div className="absolute top-4 right-4 text-purple-500"><CheckCircle2 className="w-5 h-5" /></div>}
+                                    </button>
+
+                                    <button
+                                        onClick={() => onThemeChange('dark')}
+                                        className={`group relative flex items-center p-4 rounded-2xl border-2 transition-all duration-200 ${currentTheme === 'dark'
+                                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                            : 'border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700'
+                                            }`}
+                                    >
+                                        <div className={`p-3 rounded-full mr-4 ${currentTheme === 'dark' ? 'bg-slate-800 text-purple-400 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                                            <Moon className="w-6 h-6" />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className={`block font-bold ${currentTheme === 'dark' ? 'text-purple-900 dark:text-purple-100' : 'text-slate-600 dark:text-slate-400'}`}>Dark Mode</span>
+                                            <span className="text-xs text-slate-500">Easy on the eyes</span>
+                                        </div>
+                                        {currentTheme === 'dark' && <div className="absolute top-4 right-4 text-purple-500"><CheckCircle2 className="w-5 h-5" /></div>}
                                     </button>
                                 </div>
-                            </form>
-                        </div>
-                    </section>
+                            </div>
+                        </section>
+                    </div>
 
-                    {/* Password Section */}
-                    <section>
-                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
-                            <Lock className="w-5 h-5 text-emerald-500" />
-                            Login Password
-                        </h2>
-                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-900">
-                            <form onSubmit={handlePasswordChange} className="space-y-5">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Password</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? 'text' : 'password'}
-                                            value={currentPassword}
-                                            onChange={(e) => setCurrentPassword(e.target.value)}
-                                            placeholder="Enter current password"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-10"
-                                        />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500">
-                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
+                    {/* Right Column */}
+                    <div className="xl:col-span-5 space-y-6">
+
+                        {/* Unit Price Card */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400">
+                                    <Zap className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Billing Configuration</h2>
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl p-5 mb-6 border border-amber-100 dark:border-amber-900/30">
+                                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Current Rate</p>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-3xl font-black text-slate-900 dark:text-white">{ratePerUnit.toFixed(2)}</span>
+                                        <span className="text-sm font-bold text-slate-500">PKR / kWh</span>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Password</label>
-                                    <div className="relative">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Update Rate</label>
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="number"
+                                                value={tempRate}
+                                                onChange={(e) => setTempRate(parseFloat(e.target.value) || 0)}
+                                                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                                            />
+                                            <button onClick={handleRateChange} className="px-6 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-amber-500/20 active:scale-95">
+                                                Save
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Password Card */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                                    <Lock className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Security</h2>
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <form onSubmit={handlePasswordChange} className="space-y-5">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Password</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? 'text' : 'password'}
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-10"
+                                                placeholder="••••••••"
+                                            />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors">
+                                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">New Password</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showNewPassword ? 'text' : 'password'}
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-10"
+                                                placeholder="••••••••"
+                                            />
+                                            <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors">
+                                                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirm Password</label>
                                         <input
                                             type={showNewPassword ? 'text' : 'password'}
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            placeholder="Enter new password"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-10"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                                            placeholder="••••••••"
                                         />
-                                        <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500">
-                                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Password</label>
-                                    <input
-                                        type={showNewPassword ? 'text' : 'password'}
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="Confirm new password"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
-                                    />
-                                </div>
-                                <button type="submit" className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98]">
-                                    Update Password
-                                </button>
-                            </form>
-                        </div>
-                    </section>
-
-                    {/* Unit Price Section */}
-                    <section>
-                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
-                            <Zap className="w-5 h-5 text-amber-500" />
-                            Unit Price
-                        </h2>
-                        <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Rate Per Unit (PKR)</label>
-                            <div className="flex gap-3">
-                                <input
-                                    type="number"
-                                    value={tempRate}
-                                    onChange={(e) => setTempRate(parseFloat(e.target.value) || 0)}
-                                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-lg font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
-                                />
-                                <button onClick={handleRateChange} className="px-8 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-amber-500/20">
-                                    Save
-                                </button>
+                                    <button type="submit" className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold uppercase tracking-widest text-sm transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] mt-2">
+                                        Update Password
+                                    </button>
+                                </form>
                             </div>
-                            <p className="text-xs font-semibold text-slate-400 mt-3 ml-1">
-                                Current rate: <span className="text-slate-900 dark:text-white">Rs. {ratePerUnit.toFixed(2)}</span> per kWh
-                            </p>
-                        </div>
-                    </section>
+                        </section>
 
-                    {/* Theme Section */}
-                    <section>
-                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
-                            <Palette className="w-5 h-5 text-purple-500" />
-                            Theme
-                        </h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                onClick={() => onThemeChange('light')}
-                                className={`flex items-center justify-center gap-3 py-4 rounded-xl border-2 transition-all ${currentTheme === 'light'
-                                    ? 'border-slate-900 dark:border-white bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md'
-                                    : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                                    }`}
-                            >
-                                <Sun className="w-5 h-5" />
-                                <span className="font-bold text-sm">Light Mode</span>
-                            </button>
-                            <button
-                                onClick={() => onThemeChange('dark')}
-                                className={`flex items-center justify-center gap-3 py-4 rounded-xl border-2 transition-all ${currentTheme === 'dark'
-                                    ? 'border-slate-900 dark:border-white bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md'
-                                    : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                                    }`}
-                            >
-                                <Moon className="w-5 h-5" />
-                                <span className="font-bold text-sm">Dark Mode</span>
-                            </button>
-                        </div>
-                    </section>
+                        {/* Security Questions Card */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400">
+                                    <ShieldQuestion className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recovery Questions</h2>
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
+                                    Set security questions to help you recover your password if you forget it.
+                                </p>
+                                <form onSubmit={handleSaveSecurityQuestions} className="space-y-6">
+                                    {securityQuestions.map((sq, index) => (
+                                        <div key={sq.id} className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold">
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Question {index + 1}</span>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">The Question</label>
+                                                    <input
+                                                        type="text"
+                                                        value={sq.question}
+                                                        onChange={(e) => {
+                                                            const newQuestions = [...securityQuestions];
+                                                            newQuestions[index].question = e.target.value;
+                                                            setSecurityQuestions(newQuestions);
+                                                        }}
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                        placeholder="e.g., What was your first pet's name?"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">The Answer</label>
+                                                    <input
+                                                        type="text"
+                                                        value={sq.answer}
+                                                        onChange={(e) => {
+                                                            const newQuestions = [...securityQuestions];
+                                                            newQuestions[index].answer = e.target.value;
+                                                            setSecurityQuestions(newQuestions);
+                                                        }}
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                        placeholder="Answer"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button
+                                        disabled={isSavingQuestions}
+                                        type="submit"
+                                        className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold uppercase tracking-widest text-sm transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] mt-2 flex items-center justify-center gap-2"
+                                    >
+                                        {isSavingQuestions ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            <>
+                                                <ShieldQuestion className="w-5 h-5" />
+                                                Save Security Questions
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+                        </section>
 
-                    {/* Backup & Restore Section */}
-                    <section>
-                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-slate-900 dark:text-white mb-5">
-                            <Download className="w-5 h-5 text-emerald-500" />
-                            Backup & Restore
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button
-                                onClick={handleExportData}
-                                className="flex items-center justify-center gap-3 py-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all font-bold text-sm"
-                            >
-                                <Download className="w-5 h-5" />
-                                Download Back-up
-                            </button>
-                            <div className="relative">
-                                <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleImportData} />
+                        {/* Backup Card */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                                <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-xl text-cyan-600 dark:text-cyan-400">
+                                    <Download className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Data Management</h2>
+                            </div>
+                            <div className="p-6 md:p-8 space-y-4">
                                 <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all font-bold text-sm"
+                                    onClick={handleExportData}
+                                    className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-cyan-500 dark:hover:border-cyan-500 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all group"
                                 >
-                                    <Upload className="w-5 h-5" />
-                                    Restore Backup
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Danger Zone */}
-                    <section className="pt-8 border-t border-red-100 dark:border-red-900/30">
-                        <h2 className="flex items-center gap-2.5 text-lg font-bold text-red-600 dark:text-red-400 mb-5">
-                            <AlertTriangle className="w-5 h-5" />
-                            Danger Zone
-                        </h2>
-                        <div className="p-6 border border-red-100 dark:border-red-900/20 rounded-2xl bg-red-50/30 dark:bg-red-950/10">
-                            <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
-                                <div className="space-y-1 text-center sm:text-left">
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white">Wipe All Application Data</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
-                                        This will permanently delete all shop records, meter readings, invoices, and restore settings to default.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={async () => {
-                                        if (confirm('CRITICAL ACTION: WIPE ALL DATA?\n\nThis will permanently delete ALL shops, meters, readings, and billing history. This action cannot be undone.\n\nType "WIPE" to confirm.')) {
-                                            const confirmation = prompt('Please type "WIPE" to confirm data destruction:');
-                                            if (confirmation === 'WIPE') {
-                                                const { dbService } = await import('../services/dbService');
-                                                await dbService.wipeData();
-                                            }
-                                        }
-                                    }}
-                                    className="w-full sm:w-auto px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95"
-                                >
-                                    Wipe All Data
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* About Section */}
-                    <section className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <button
-                            onClick={() => setIsAboutOpen(!isAboutOpen)}
-                            className="w-full flex items-center justify-between text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
-                        >
-                            <div className="flex items-center gap-2.5">
-                                <Info className="w-5 h-5" />
-                                <span className="text-lg font-bold">About</span>
-                            </div>
-                            {isAboutOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                        </button>
-                        <AnimatePresence>
-                            {isAboutOpen && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className="pt-4 pb-2 text-sm text-slate-500 dark:text-slate-400 space-y-2 pl-8">
-                                        <p className="font-semibold">MeraMeter Utility Billing System</p>
-                                        <p>Version 1.2.0 (Stable)</p>
-                                        <p>© {new Date().getFullYear()} All rights reserved.</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 group-hover:text-cyan-500 transition-colors">
+                                            <Download className="w-5 h-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="block font-bold text-slate-900 dark:text-white">Export Data</span>
+                                            <span className="text-xs text-slate-500">Download JSON backup</span>
+                                        </div>
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </section>
+                                </button>
 
+                                <div className="relative">
+                                    <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleImportData} />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 group-hover:text-blue-500 transition-colors">
+                                                <Upload className="w-5 h-5" />
+                                            </div>
+                                            <div className="text-left">
+                                                <span className="block font-bold text-slate-900 dark:text-white">Restore Data</span>
+                                                <span className="text-xs text-slate-500">Import from JSON file</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* About Section */}
+                        <section className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <button
+                                onClick={() => setIsAboutOpen(!isAboutOpen)}
+                                className="w-full p-6 flex items-center justify-between text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Info className="w-5 h-5 text-slate-400" />
+                                    <span className="font-bold">About System</span>
+                                </div>
+                                {isAboutOpen ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                            </button>
+                            <AnimatePresence>
+                                {isAboutOpen && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden bg-slate-50 dark:bg-slate-800/30"
+                                    >
+                                        <div className="p-6 pt-0 text-sm text-slate-500 dark:text-slate-400 space-y-2 border-t border-slate-100 dark:border-slate-800 mt-2 pt-4">
+                                            <p className="font-bold text-slate-900 dark:text-white">MeraMeter Utility Billing System</p>
+                                            <p>Version 1.2.0 (Stable)</p>
+                                            <p>© {new Date().getFullYear()} All rights reserved.</p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </section>
+
+                    </div>
                 </div>
-
-
             </div>
         </div>
     );

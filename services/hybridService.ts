@@ -63,6 +63,39 @@ class HybridDataService implements IDataService {
         return true;
     }
 
+    async saveMeterReading(reading: MeterReading): Promise<boolean> {
+        if (this.isElectron()) {
+            return await (window as any).electronAPI.saveMeterReading(reading);
+        }
+
+        await dbService.put('readings', reading);
+        return true;
+    }
+
+    async saveInvoice(invoice: Invoice): Promise<boolean> {
+        if (this.isElectron()) {
+            return await (window as any).electronAPI.saveInvoice(invoice);
+        }
+
+        await dbService.put('invoices', invoice);
+        return true;
+    }
+
+    async updateMeterLastReading(meterId: string, lastReading: number): Promise<boolean> {
+        if (this.isElectron()) {
+            return await (window as any).electronAPI.updateMeterLastReading(meterId, lastReading);
+        }
+
+        const meters = await dbService.getAll<Meter>('meters');
+        const meter = meters.find(m => m.id === meterId);
+        
+        if (meter) {
+            meter.lastReading = lastReading;
+            await dbService.put('meters', meter);
+        }
+        return true;
+    }
+
     async analyzeImage(base64Image: string, knownSerials: string[]): Promise<any> {
         if (!navigator.onLine) {
             throw new Error("Internet connection is required to scan meters.");

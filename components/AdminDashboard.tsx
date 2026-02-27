@@ -328,127 +328,147 @@ const AdminDashboard: React.FC<Props> = ({ shops, readings, invoices }) => {
       </div>
 
       {/* ─── RECENT ACTIVITY ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* ─── RECENT ACTIVITY ─── */}
+<div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* Shops Drawer */}
-        <AnimatePresence>
-          {expandShops && (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-1 h-5 bg-blue-600 rounded-full" />
-                  <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wide">Registered Shops</h2>
-                </div>
-                <button
-                  onClick={() => setExpandShops(false)}
-                  className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-90 transition-all"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {shops.length === 0 ? (
-                <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">No shops registered</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                  {shops.map(shop => (
-                    <div
-                      key={shop.id}
-                      className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all group"
-                    >
-                      <div className="flex items-center gap-3">
-                        {shop.customerImage ? (
-                          <img src={shop.customerImage} alt={shop.name} className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-slate-700" />
-                        ) : (
-                          <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/20 flex items-center justify-center">
-                            <Store className="w-4 h-4 text-blue-500" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-bold text-sm text-slate-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{shop.name}</p>
-                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{shop.ownerName} · {shop.phone}</p>
-                        </div>
-                        <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-1 rounded-md uppercase tracking-wider shrink-0">
-                          {shop.shopNumber || shop.id.slice(0, 6)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Recent Readings */}
-        <div className={`space-y-4 ${expandShops ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2.5">
-                <div className="w-1 h-5 bg-emerald-600 rounded-full" />
-                <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wide">Recent Readings</h2>
-              </div>
-              <button
-                onClick={() => setExpandShops(!expandShops)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
-              >
-                <Users className="w-3.5 h-3.5" />
-                {expandShops ? 'Hide Shops' : `View ${shops.length} Shops`}
-              </button>
-            </div>
-
-            {readings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <Activity className="w-8 h-8 text-slate-200 dark:text-slate-700 mb-3" />
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">No readings yet</p>
-              </div>
-            ) : (
-              <div className={`grid gap-3 ${!expandShops ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
-                {readings.slice().reverse().slice(0, 12).map((reading) => {
-                  const shop = shops.find(s => s.id === reading.shopId);
-                  return (
-                    <div
-                      key={reading.id}
-                      className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md dark:hover:shadow-black/10 transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{shop?.name || 'Unknown'}</p>
-                          <p className="text-[10px] font-semibold text-slate-400 mt-1">
-                            {new Date(reading.timestamp || reading.readingDate || new Date()).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-base font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{reading.readingValue}</p>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">kWh</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center gap-1.5">
-                          <div className={`w-1.5 h-1.5 rounded-full ${reading.status === 'APPROVED' || !reading.status ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{reading.status || 'Approved'}</span>
-                        </div>
-                        {reading.confidence && (
-                          <span className="text-[9px] font-bold text-slate-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800">
-                            {reading.confidence}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+  {/* Shops Drawer */}
+  <AnimatePresence>
+    {expandShops && (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-[600px]"
+      >
+        <div className="flex justify-between items-center mb-6 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-5 bg-blue-600 rounded-full" />
+            <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wide">
+              Registered Shops
+            </h2>
           </div>
+          <button
+            onClick={() => setExpandShops(false)}
+            className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-90 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
+
+        {/* ✅ Scroll Area */}
+        <div className="flex-1 overflow-y-auto pr-1">
+          {shops.length === 0 ? (
+            <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                No shops registered
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {shops.map(shop => (
+                <div
+                  key={shop.id}
+                  className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    {shop.customerImage ? (
+                      <img
+                        src={shop.customerImage}
+                        alt={shop.name}
+                        className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/20 flex items-center justify-center">
+                        <Store className="w-4 h-4 text-blue-500" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-sm text-slate-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {shop.name}
+                      </p>
+                      <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                        {shop.ownerName} · {shop.phone}
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-1 rounded-md uppercase tracking-wider shrink-0">
+                      {shop.shopNumber || shop.id.slice(0, 6)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+
+  {/* Recent Readings */}
+  <div className={`space-y-4 ${expandShops ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-[600px]">
+
+      <div className="flex items-center justify-between mb-6 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-1 h-5 bg-emerald-600 rounded-full" />
+          <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wide">
+            Recent Readings
+          </h2>
+        </div>
+        <button
+          onClick={() => setExpandShops(!expandShops)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
+        >
+          <Users className="w-3.5 h-3.5" />
+          {expandShops ? 'Hide Shops' : `View ${shops.length} Shops`}
+        </button>
       </div>
+
+      {/* ✅ Scroll Area */}
+      <div className="flex-1 overflow-y-auto pr-1">
+        {readings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <Activity className="w-8 h-8 text-slate-200 dark:text-slate-700 mb-3" />
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              No readings yet
+            </p>
+          </div>
+        ) : (
+          <div className={`grid gap-3 ${!expandShops ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
+            {readings.slice().reverse().map((reading) => {
+              const shop = shops.find(s => s.id === reading.shopId);
+              return (
+                <div
+                  key={reading.id}
+                  className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md dark:hover:shadow-black/10 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">
+                        {shop?.name || 'Unknown'}
+                      </p>
+                      <p className="text-[10px] font-semibold text-slate-400 mt-1">
+                        {new Date(reading.timestamp || reading.readingDate || new Date()).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-base font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                        {reading.readingValue}
+                      </p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+                        kWh
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+    </div>
+  </div>
+</div>
     </div>
   );
 };

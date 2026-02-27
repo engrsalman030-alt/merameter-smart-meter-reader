@@ -23,11 +23,14 @@ class DBService {
 
       if ('opfs' in sqlite3) {
         this.db = new sqlite3.oo1.OpfsDb(`/${DB_NAME}`);
-        console.log('Using OPFS for SQLite storage');
+        console.log('✅ SQLite VFS: Using OPFS (High Capacity Storage)');
       } else {
         this.db = new sqlite3.oo1.JsStorageDb('local');
-        console.log('Using local storage for SQLite storage');
+        console.log('⚠️ SQLite VFS: Using LocalStorage (Quota Restricted)');
       }
+
+      // Optimize Journal Mode to avoid QuotaExceededError in localStorage
+      this.db.exec(`PRAGMA journal_mode = MEMORY;`);
 
       // Initialize schema
       this.db.exec(`
@@ -195,12 +198,6 @@ class DBService {
 
       this.db.exec('COMMIT');
 
-      // Update localStorage keys as well for compatibility
-      localStorage.setItem('shops', data.shops);
-      localStorage.setItem('meters', data.meters);
-      localStorage.setItem('readings', data.readings);
-      localStorage.setItem('invoices', data.invoices);
-
       window.location.reload();
     } catch (err) {
       if (this.db) this.db.exec('ROLLBACK');
@@ -220,12 +217,6 @@ class DBService {
       this.db.exec('DELETE FROM settings');
       this.db.exec('DELETE FROM security_questions');
       this.db.exec('COMMIT');
-
-      localStorage.removeItem('shops');
-      localStorage.removeItem('meters');
-      localStorage.removeItem('readings');
-      localStorage.removeItem('invoices');
-      localStorage.removeItem('isAdminLoggedIn');
 
       window.location.href = '/';
     } catch (err) {
